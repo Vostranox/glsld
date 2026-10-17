@@ -1,0 +1,94 @@
+{
+  "name": "glsld",
+  "displayName": "glsld — GLSL Language Server",
+  "description": "GLSL completion, navigation, formatting and diagnostics with a bundled language server.",
+  "version": "0.1.0",
+  "author": "Vostranox",
+  "publisher": "Vostranox",
+  "license": "MIT",
+  "private": true,
+  "repository": { "type": "git", "url": "https://github.com/Vostranox/glsld.git" },
+  "homepage": "https://github.com/Vostranox/glsld",
+  "bugs": { "url": "https://github.com/Vostranox/glsld/issues" },
+  "engines": { "vscode": "^1.96.0" },
+  "categories": ["Programming Languages", "Formatters"],
+  "keywords": ["glsl", "shader", "vulkan", "opengl", "lsp"],
+  "extensionKind": ["workspace"],
+  "main": "./dist/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Trust this workspace to run glsld and any validator configured by the project."
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "glsld requires files on disk."
+    }
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "glsl",
+        "aliases": ["GLSL", "glsl"],
+        "extensions": [
+          ".glsl", ".vert", ".frag", ".geom", ".tesc", ".tese", ".comp", ".mesh", ".task",
+          ".rgen", ".rint", ".rahit", ".rchit", ".rmiss", ".rcall",
+          ".vs", ".fs", ".gs", ".vsh", ".fsh"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "glsl",
+        "scopeName": "source.glsl",
+        "path": "./syntaxes/glsl.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      { "command": "glsld.restart", "title": "glsld: Restart Language Server" }
+    ],
+    "configuration": {
+      "title": "glsld",
+      "properties": {
+        "glsld.path": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "markdownDescription": "Absolute path to a custom `glsld` executable on the extension host. Leave empty to use the bundled server."
+        },
+        "glsld.watchPatterns": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "default": [],
+          "scope": "window",
+          "markdownDescription": "Extra workspace-relative glob patterns to watch for shader changes. Common shader and include extensions and `glsld.toml` are watched automatically."
+        },
+        "glsld.trace.server": {
+          "type": "string",
+          "enum": ["off", "messages", "verbose"],
+          "default": "off",
+          "scope": "window",
+          "description": "Log language server messages in the glsld output channel."
+        }
+      }
+    },
+    "configurationDefaults": {
+      "[glsl]": { "editor.wordBasedSuggestions": "off", "editor.suggest.showWords": false }
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "compile": "npm run typecheck && node scripts/build.mjs",
+    "vscode:prepublish": "npm run compile",
+    "package": "node scripts/package.mjs"
+  },
+  "dependencies": { "vscode-languageclient": "10.1.2" },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/vscode": "1.96.0",
+    "@vscode/vsce": "4.0.0",
+    "esbuild": "0.28.2",
+    "typescript": "5.9.3"
+  }
+}

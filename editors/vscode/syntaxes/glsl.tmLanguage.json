@@ -1,0 +1,96 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "GLSL",
+  "scopeName": "source.glsl",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "name": "meta.preprocessor.glsl",
+      "begin": "^\\s*#\\s*[A-Za-z_]+",
+      "beginCaptures": {
+        "0": {
+          "name": "keyword.control.directive.glsl"
+        }
+      },
+      "end": "(?<!\\\\)$",
+      "patterns": [
+        {
+          "include": "#comments"
+        },
+        {
+          "include": "#strings"
+        },
+        {
+          "include": "#numbers"
+        }
+      ]
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "name": "constant.language.boolean.glsl",
+      "match": "\\b(?:true|false)\\b"
+    },
+    {
+      "name": "keyword.control.glsl",
+      "match": "\\b(?:if|else|switch|case|default|for|while|do|break|continue|return|discard)\\b"
+    },
+    {
+      "name": "storage.type.glsl",
+      "match": "\\b(?:void|bool|int|uint|float|double|[biud]?vec[234]|d?mat[234](?:x[234])?|[iu]?(?:sampler|image)(?:1D|2D|3D|Cube|2DRect|Buffer)(?:MS)?(?:Array)?(?:Shadow)?|atomic_uint|[iu]?subpassInput(?:MS)?)\\b"
+    },
+    {
+      "name": "storage.modifier.glsl",
+      "match": "\\b(?:struct|layout|const|in|out|inout|uniform|buffer|shared|attribute|varying|centroid|sample|patch|flat|smooth|noperspective|invariant|precise|coherent|volatile|restrict|readonly|writeonly|lowp|mediump|highp|precision|subroutine)\\b"
+    },
+    {
+      "name": "support.variable.glsl",
+      "match": "\\bgl_[A-Za-z_0-9]+\\b"
+    },
+    {
+      "name": "entity.name.function.glsl",
+      "match": "\\b[A-Za-z_][A-Za-z_0-9]*(?=\\s*\\()"
+    },
+    {
+      "name": "keyword.operator.glsl",
+      "match": "[+*/%=!<>|&^~?:-]+"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.glsl",
+          "begin": "//",
+          "end": "$"
+        },
+        {
+          "name": "comment.block.glsl",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.glsl",
+      "begin": "\"",
+      "end": "\"|$",
+      "patterns": [
+        {
+          "name": "constant.character.escape.glsl",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "numbers": {
+      "name": "constant.numeric.glsl",
+      "match": "(?<![A-Za-z_0-9])(?:0[xX][0-9a-fA-F]+[uU]?|(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?(?:[uUfF]|[lL][fF])?)(?![A-Za-z_0-9])"
+    }
+  }
+}

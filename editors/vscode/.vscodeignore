@@ -1,0 +1,12 @@
+**
+!package.json
+!README.md
+!LICENSE
+!THIRD_PARTY_NOTICES.md
+!THIRD_PARTY_LICENSES.txt
+!third-party/**
+!language-configuration.json
+!syntaxes/**
+!dist/extension.js
+!bin/glsld
+!bin/glsld.exe

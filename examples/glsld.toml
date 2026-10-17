@@ -1,0 +1,17 @@
+# Include paths are relative to this file.
+include_paths = ["shaders/include"]
+macros = ["MAX_LIGHTS=4"]
+format_on_save = false
+
+[stage_aliases]
+".ps" = "frag"
+".vsh" = "vert"
+
+[glslang]
+enable = true
+on_change = true
+timeout_ms = 5000
+
+# For Vulkan shaders whose version is supplied by the engine:
+# target_env = "vulkan1.0"
+# glsl_version = "450"

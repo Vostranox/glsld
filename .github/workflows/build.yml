@@ -1,0 +1,132 @@
+name: Build and release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-26.04
+            target: x86_64-unknown-linux-gnu
+            vsix: linux-x64
+            rustflags: ""
+          - runner: ubuntu-26.04-arm
+            target: aarch64-unknown-linux-gnu
+            vsix: linux-arm64
+            rustflags: ""
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+            vsix: darwin-x64
+            rustflags: ""
+          - runner: macos-14
+            target: aarch64-apple-darwin
+            vsix: darwin-arm64
+            rustflags: ""
+          - runner: windows-2022
+            target: x86_64-pc-windows-msvc
+            vsix: win32-x64
+            rustflags: "-C target-feature=+crt-static"
+          - runner: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            vsix: win32-arm64
+            rustflags: "-C target-feature=+crt-static"
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_BUILD_JOBS: "2"
+      RUSTFLAGS: ${{ matrix.rustflags }}
+      GLSLD_TARGET: ${{ matrix.target }}
+      GLSLD_VSIX_TARGET: ${{ matrix.vsix }}
+      GLSLD_RELEASE_TAG: ${{ github.ref_name }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: editors/vscode/package-lock.json
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt --component clippy --target "$GLSLD_TARGET"
+          rustup default stable
+      - name: Check matching versions
+        run: python scripts/release.py check --tag "$GLSLD_RELEASE_TAG"
+      - name: Check Rust formatting and lint
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --locked --target "$GLSLD_TARGET" -- -D warnings
+      - name: Build native server
+        run: cargo build --release --locked --target "$GLSLD_TARGET"
+      - name: Package server and dependency licenses
+        run: python scripts/release.py package --target "$GLSLD_TARGET"
+      - name: Install extension dependencies
+        working-directory: editors/vscode
+        run: npm ci
+      - name: Package platform-specific extension
+        working-directory: editors/vscode
+        run: |
+          version=$(node -p 'require("./package.json").version')
+          npm run package -- --target "$GLSLD_VSIX_TARGET" --out "../../dist/glsld-v$version-$GLSLD_VSIX_TARGET.vsix"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publish GitHub release
+    needs: package
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+      - name: Verify complete artifact set and write checksums
+        env:
+          GLSLD_RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python scripts/release.py check --tag "$GLSLD_RELEASE_TAG"
+          python scripts/release.py checksums dist
+      - name: Publish all platforms together
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GLSLD_RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$GLSLD_RELEASE_TAG" \
+            dist/*.tar.gz dist/*.zip dist/*.vsix dist/SHA256SUMS \
+            --verify-tag --draft --generate-notes --title "glsld $GLSLD_RELEASE_TAG"
+          gh release edit "$GLSLD_RELEASE_TAG" --draft=false
